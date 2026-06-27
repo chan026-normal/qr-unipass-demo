@@ -1,0 +1,8 @@
+streamlit>=1.50
+streamlit-autorefresh>=1.0.1
+qrcode[pil]>=7.4
+pandas>=2.0
+altair>=5.0
+gspread>=6.0
+google-auth>=2.30
+tzdata>=2024.1

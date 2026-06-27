@@ -1,0 +1,17 @@
+# Local data store (must never be committed)
+attendance.db
+attendance.db-wal
+attendance.db-shm
+
+# Real secrets (only the .example is committed)
+.streamlit/secrets.toml
+
+# Generated QR images
+qr.png
+*_qr.png
+
+# Python / OS noise
+__pycache__/
+*.pyc
+.venv/
+.DS_Store

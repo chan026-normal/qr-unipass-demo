@@ -1,0 +1,10 @@
+# Theme matches the pitch slides: navy text, teal accent.
+[theme]
+primaryColor = "#0CA678"
+backgroundColor = "#FFFFFF"
+secondaryBackgroundColor = "#F1F3F5"
+textColor = "#14294C"
+font = "sans serif"
+
+[server]
+headless = true
