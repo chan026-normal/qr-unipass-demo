@@ -11,14 +11,12 @@ import storage
 
 st.set_page_config(page_title="QR UniPass — Dashboard", page_icon="📊", layout="wide")
 
-# Optional light access gate: if ADMIN_KEY is set, require ?key=... in the URL.
+# Access logic: the dashboard (counts/list/chart) is ALWAYS visible so it can be
+# shown on the projector to anyone. Only the "Reset" control is presenter-only —
+# the presenter proves it by passing ?key=YOUR_KEY in the URL (matching ADMIN_KEY).
+# If no ADMIN_KEY is set, Reset stays open (handy for local development).
 admin_key = storage.get_setting("ADMIN_KEY", "")
-if admin_key:
-    provided = st.query_params.get("key", "")
-    if provided != admin_key:
-        st.title("QR UniPass — Live Attendance Dashboard")
-        st.warning("Append ?key=YOUR_KEY to the URL to view this dashboard.")
-        st.stop()
+is_admin = (not admin_key) or (st.query_params.get("key", "") == admin_key)
 
 # Real-time feel.
 st_autorefresh(interval=3000, key="dashboard_refresh")
@@ -59,17 +57,20 @@ else:
 
 st.caption(f"Source: {storage.source_label()} · auto-refresh every 3s")
 
-# --- Reset (with confirmation) ---
-with st.expander("⚙️ Admin controls"):
-    if st.button("Reset all check-ins"):
-        st.session_state["confirm_reset"] = True
-    if st.session_state.get("confirm_reset"):
-        st.warning("This permanently deletes all current check-ins.")
-        col_a, col_b = st.columns(2)
-        if col_a.button("Yes, reset now", type="primary"):
-            storage.reset()
-            st.session_state["confirm_reset"] = False
-            st.success("Cleared.")
-            st.rerun()
-        if col_b.button("Cancel"):
-            st.session_state["confirm_reset"] = False
+# --- Reset (presenter only; with confirmation) ---
+# The whole control is hidden unless ?key=YOUR_KEY matches ADMIN_KEY, so other
+# people viewing the dashboard cannot wipe the data — they don't even see the button.
+if is_admin:
+    with st.expander("⚙️ Admin controls"):
+        if st.button("Reset all check-ins"):
+            st.session_state["confirm_reset"] = True
+        if st.session_state.get("confirm_reset"):
+            st.warning("This permanently deletes all current check-ins.")
+            col_a, col_b = st.columns(2)
+            if col_a.button("Yes, reset now", type="primary"):
+                storage.reset()
+                st.session_state["confirm_reset"] = False
+                st.success("Cleared.")
+                st.rerun()
+            if col_b.button("Cancel"):
+                st.session_state["confirm_reset"] = False
