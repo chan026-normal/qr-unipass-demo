@@ -97,15 +97,30 @@ st.caption(f"Source: {storage.source_label()} · auto-refresh every 3s")
 # --- Reset (presenter only; with confirmation) ---
 if is_admin:
     with st.expander("Admin controls"):
-        if st.button("Reset all check-ins"):
-            st.session_state["confirm_reset"] = True
-        if st.session_state.get("confirm_reset"):
-            st.warning("This permanently deletes all current check-ins.")
-            col_a, col_b = st.columns(2)
-            if col_a.button("Yes, reset now", type="primary"):
-                storage.reset()
-                st.session_state["confirm_reset"] = False
+        b1, b2, b3 = st.columns(3)
+        if b1.button("Reset check-ins"):
+            st.session_state["confirm_target"] = "checkins"
+        if b2.button("Reset cafeteria"):
+            st.session_state["confirm_target"] = "cafeteria"
+        if b3.button("Reset everything"):
+            st.session_state["confirm_target"] = "all"
+
+        pending = st.session_state.get("confirm_target")
+        if pending:
+            what = {
+                "checkins": "all check-ins",
+                "cafeteria": "all cafeteria data",
+                "all": "ALL data (check-ins + cafeteria)",
+            }[pending]
+            st.warning(f"This permanently deletes {what}.")
+            yes, no = st.columns(2)
+            if yes.button("Yes, reset now", type="primary"):
+                if pending in ("checkins", "all"):
+                    storage.reset()
+                if pending in ("cafeteria", "all"):
+                    storage.cafe_reset()
+                st.session_state["confirm_target"] = None
                 st.success("Cleared.")
                 st.rerun()
-            if col_b.button("Cancel"):
-                st.session_state["confirm_reset"] = False
+            if no.button("Cancel"):
+                st.session_state["confirm_target"] = None
