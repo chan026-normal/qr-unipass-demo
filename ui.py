@@ -52,6 +52,8 @@ def _hide_chrome() -> None:
         '[data-testid="stSidebarNav"]{display:none!important;}'
         'header[data-testid="stHeader"] a[href*="github.com"]{display:none!important;}'
         '[class*="viewerBadge"]{display:none!important;}'
+        '[data-testid="manage-app-button"]{display:none!important;}'
+        '.stAppDeployButton{display:none!important;}'
         '#MainMenu{display:none!important;}footer{display:none!important;}'
         '</style>',
         unsafe_allow_html=True,

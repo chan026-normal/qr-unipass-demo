@@ -1,5 +1,8 @@
 # Theme matches the pitch slides: navy text, teal accent.
 [theme]
+# Force light mode so the app looks identical on every device (phones in dark
+# mode, the projector, etc.) — the demo was designed and tested in light.
+base = "light"
 primaryColor = "#0CA678"
 backgroundColor = "#FFFFFF"
 secondaryBackgroundColor = "#F1F3F5"
