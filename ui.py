@@ -47,8 +47,11 @@ def _hide_chrome() -> None:
         '#MainMenu{display:none!important;}footer{display:none!important;}'
         # Make the module nav look like compact chips
         '[data-testid="stPageLink"] a{justify-content:center;border:1px solid rgba(20,41,76,.18);'
-        'border-radius:8px;padding:8px 2px;font-size:13px;}'
+        'border-radius:8px;padding:8px 2px;}'
+        '[data-testid="stPageLink"] a span,[data-testid="stPageLink"] a p{white-space:nowrap;font-size:12px;}'
         '[data-testid="stPageLink"] a:hover{background:rgba(29,158,117,.10);border-color:#1D9E75;}'
+        '[class*="st-key-nav_"] button p{white-space:nowrap;font-size:12px;}'
+        '[class*="st-key-nav_"] button{padding-left:2px;padding-right:2px;}'
         '</style>',
         unsafe_allow_html=True,
     )
