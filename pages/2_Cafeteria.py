@@ -59,19 +59,23 @@ else:
     name = manual_name
 name = (name or "").strip()
 
-if name:
-    # Show a one-time message from the previous action (so the balance below is fresh).
-    flash = st.session_state.pop("cafe_flash", None)
-    if flash:
-        getattr(st, flash[0])(flash[1])
+# Show a one-time message from the previous action (so the balance below is fresh).
+flash = st.session_state.pop("cafe_flash", None)
+if flash:
+    getattr(st, flash[0])(flash[1])
 
-    st.metric("Balance", storage.fmt_vnd(storage.cafe_balance(name)))
+# Balance shows once a name is entered.
+st.metric("Balance", storage.fmt_vnd(storage.cafe_balance(name)) if name else "—")
 
-    labels = [f"{item} — {storage.fmt_vnd(price)}" for item, price in MENU]
-    pick = st.selectbox("Choose your meal", labels)
-    item, price = MENU[labels.index(pick)]
+# Meal + Pay are always visible (like the check-in button) — no Enter needed.
+labels = [f"{item} — {storage.fmt_vnd(price)}" for item, price in MENU]
+pick = st.selectbox("Choose your meal", labels)
+item, price = MENU[labels.index(pick)]
 
-    if st.button(f"Pay {storage.fmt_vnd(price)}", type="primary", width="stretch"):
+if st.button(f"Pay {storage.fmt_vnd(price)}", type="primary", width="stretch"):
+    if not name:
+        st.session_state["cafe_flash"] = ("warning", "Please enter your name first.")
+    else:
         try:
             new_bal = storage.cafe_pay(name, item, price)
             st.session_state["cafe_flash"] = (
@@ -82,15 +86,16 @@ if name:
             st.session_state["cafe_flash"] = ("warning", "Not enough balance. Please top up.")
         except Exception:
             st.session_state["cafe_flash"] = ("error", "Something went wrong. Please try again.")
-        st.rerun()
+    st.rerun()
 
-    # Top-up is presenter-only (admin), so the student screen stays clean.
-    if is_admin and st.button(f"Top up {storage.fmt_vnd(TOPUP)} (admin)", width="stretch"):
+# Top-up is presenter-only (admin), so the student screen stays clean.
+if is_admin and st.button(f"Top up {storage.fmt_vnd(TOPUP)} (admin)", width="stretch"):
+    if not name:
+        st.session_state["cafe_flash"] = ("warning", "Enter a name first.")
+    else:
         new_bal = storage.cafe_topup(name, TOPUP)
         st.session_state["cafe_flash"] = ("info", f"Topped up. New balance: {storage.fmt_vnd(new_bal)}")
-        st.rerun()
-else:
-    st.info("Select or type your name to see your balance and pay.")
+    st.rerun()
 
 # Small "data" line — supports the pitch's data-driven story.
 txns = storage.get_cafeteria()
