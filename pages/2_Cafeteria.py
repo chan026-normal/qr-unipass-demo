@@ -53,8 +53,8 @@ confirmed = st.session_state.get("cafe_user") or None
 
 if not confirmed:
     # Step 1 — identify yourself (Student ID or name). The menu appears after this.
-    st.caption("Enter your Student ID, or your name if you don't have one.")
-    sid_in = st.text_input("Student ID")
+    st.caption("Enter your ID, or your name if you don't have one.")
+    sid_in = st.text_input("ID")
 
     manual_name = ""
     choice = None
