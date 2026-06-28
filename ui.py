@@ -54,6 +54,8 @@ def _hide_chrome() -> None:
         '[class*="viewerBadge"]{display:none!important;}'
         '[data-testid="manage-app-button"]{display:none!important;}'
         '.stAppDeployButton{display:none!important;}'
+        '[data-testid="stStatusWidget"]{display:none!important;}'
+        'a[href*="streamlit.io"]{display:none!important;}'
         '#MainMenu{display:none!important;}footer{display:none!important;}'
         '</style>',
         unsafe_allow_html=True,
