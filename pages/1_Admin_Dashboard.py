@@ -68,6 +68,30 @@ if count:
 else:
     st.info("No check-ins yet. Show the QR and ask the audience to scan.")
 
+# --- Cafeteria (live, secondary section — same dashboard, all campus data) ---
+st.divider()
+st.markdown("##### Cafeteria")
+cafe = storage.get_cafeteria()
+pays = [t for t in cafe if t.get("kind") == "pay"]
+meals = len(pays)
+revenue = sum(int(t.get("amount") or 0) for t in pays)
+diners = len({(t.get("student_id") or t.get("name") or "").strip().lower() for t in pays})
+
+m1, m2, m3 = st.columns(3)
+m1.metric("Meals sold", meals)
+m2.metric("Revenue", storage.fmt_vnd(revenue))
+m3.metric("Students served", diners)
+
+if meals:
+    cdf = pd.DataFrame(pays)
+    cdf["Time"] = cdf["timestamp"].str.split("T").str[-1].str[:5]
+    cdf["Amount"] = cdf["amount"].apply(storage.fmt_vnd)
+    cdf = cdf.rename(columns={"name": "Name", "item": "Item"})
+    cdf = cdf[["Name", "Item", "Amount", "Time"]].iloc[::-1].reset_index(drop=True)
+    st.dataframe(cdf, width="stretch", hide_index=True)
+else:
+    st.caption("No cafeteria payments yet — open the Cafeteria page to try one.")
+
 st.caption(f"Source: {storage.source_label()} · auto-refresh every 3s")
 
 # --- Reset (presenter only; with confirmation) ---
