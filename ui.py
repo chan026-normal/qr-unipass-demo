@@ -30,6 +30,9 @@ _MODULES = [
     ("dormitory", "Dormitory", True),
 ]
 
+# Built modules link to their page; unbuilt ones are not clickable.
+_PAGE_URL = {"attendance": "/", "cafeteria": "/Cafeteria"}
+
 
 def icon_svg(name: str, size: int = 20, color: str = "currentColor", stroke: float = 1.8) -> str:
     return (
@@ -56,32 +59,38 @@ def _hide_chrome() -> None:
 
 
 def render_header(active: str = "") -> None:
-    """Navy brand bar + tagline + the four campus-module icons (info only).
+    """Navy brand bar + tagline + the four campus-module icons.
 
-    `active` highlights one available module; the unbuilt ones show a "Soon" tag.
+    Built modules (Attendance, Cafeteria) are clickable; the unbuilt ones
+    (Library, Dormitory) show a "Soon" tag and are not clickable.
     """
     _hide_chrome()
     chips = ""
     for key, label, soon in _MODULES:
         on = key == active
         if soon:
-            bg, fg = "rgba(255,255,255,0.05)", "rgba(255,255,255,0.45)"
+            bg, fg = "rgba(255,255,255,0.05)", "rgba(255,255,255,0.42)"
         elif on:
-            bg, fg = "rgba(29,158,117,0.22)", "#9FE1CB"
+            bg, fg = "rgba(29,158,117,0.30)", "#B8ECD8"
         else:
-            bg, fg = "rgba(255,255,255,0.07)", "rgba(255,255,255,0.78)"
+            bg, fg = "rgba(29,158,117,0.12)", "#7FD9BC"
         badge = (
             '<div style="font-size:9px;color:#9FE1CB;background:rgba(29,158,117,0.18);'
             'border-radius:6px;display:inline-block;padding:0 5px;margin-top:3px;">Soon</div>'
             if soon else ''
         )
-        chips += (
-            f'<div style="flex:1;text-align:center;background:{bg};border-radius:8px;padding:7px 2px;">'
+        inner = (
             f'<div style="line-height:1;color:{fg};">{icon_svg(key, size=20, color=fg)}</div>'
-            f'<div style="font-size:11px;color:{fg};margin-top:3px;">{label}</div>'
-            f'{badge}'
-            f'</div>'
+            f'<div style="font-size:11px;color:{fg};margin-top:3px;">{label}</div>{badge}'
         )
+        base = f'flex:1;text-align:center;background:{bg};border-radius:8px;padding:7px 2px;display:block;'
+        if soon:
+            chips += f'<div style="{base}cursor:default;">{inner}</div>'
+        else:
+            chips += (
+                f'<a href="{_PAGE_URL[key]}" target="_self" '
+                f'style="{base}text-decoration:none;cursor:pointer;">{inner}</a>'
+            )
     st.markdown(
         f'<div style="background:{NAVY};border-radius:12px;padding:14px 16px;margin-bottom:14px;">'
         f'<div style="font-size:19px;font-weight:600;color:#fff;">QR UniPass</div>'
