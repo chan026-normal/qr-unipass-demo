@@ -45,6 +45,9 @@ def _hide_chrome() -> None:
         'a[href*="streamlit.io"]{display:none!important;}'
         '[class*="viewerBadge"]{display:none!important;}'
         '#MainMenu{display:none!important;}footer{display:none!important;}'
+        # Remove the empty top header bar and trim the big top gap
+        'header[data-testid="stHeader"]{display:none!important;}'
+        '.block-container{padding-top:1rem!important;}'
         # Make the module nav look like compact chips
         '[data-testid="stPageLink"] a{justify-content:center;border:1px solid rgba(20,41,76,.18);'
         'border-radius:8px;padding:8px 2px;}'

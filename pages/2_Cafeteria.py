@@ -18,7 +18,7 @@ st.markdown(
     """
     <style>
       .stButton > button { font-size: 1.2rem; padding: 0.8rem 1rem; border-radius: 12px; }
-      .block-container { padding-top: 2.5rem; max-width: 32rem; }
+      .block-container { max-width: 32rem; }
     </style>
     """,
     unsafe_allow_html=True,
