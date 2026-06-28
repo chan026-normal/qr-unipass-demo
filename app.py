@@ -7,6 +7,7 @@ types their name, taps "Check in", and is done in ~3 seconds.
 import streamlit as st
 
 import storage
+import ui
 
 st.set_page_config(page_title="QR UniPass — Check-in", page_icon="✅", layout="centered")
 
@@ -16,14 +17,13 @@ st.markdown(
     <style>
       .stButton > button { font-size: 1.25rem; padding: 0.9rem 1rem; border-radius: 12px; }
       .block-container { padding-top: 2.5rem; max-width: 32rem; }
-      h1 { margin-bottom: 0; }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-st.title("QR UniPass")
-st.caption("Classroom Check-in")
+ui.render_header(active="attendance")
+st.caption("Xin chào — check in below")
 
 roster = storage.load_roster()
 PLACEHOLDER = "— Select your name —"
@@ -53,8 +53,20 @@ if st.button("Check in", type="primary", width="stretch"):
     else:
         try:
             rec = storage.add_checkin(name, student_id)
-            when = rec["timestamp"].split("T")[-1]
-            st.success(f"✅ You're checked in! — {rec['name']}, {when}")
+            when = rec["timestamp"].split("T")[-1][:5]
+            st.markdown(
+                f'<div style="background:#E1F5EE;border:1px solid #9FE1CB;border-radius:12px;'
+                f'padding:22px;text-align:center;margin-top:10px;">'
+                f'<div style="font-size:46px;line-height:1;">✅</div>'
+                f'<div style="font-size:18px;font-weight:600;color:#04342C;margin-top:6px;">'
+                f'You\'re checked in!</div>'
+                f'<div style="font-size:24px;font-weight:700;color:#04342C;margin-top:4px;">'
+                f'{rec["name"]}</div>'
+                f'<div style="font-size:13px;color:#0F6E56;margin-top:4px;">{when} · welcome aboard</div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+            st.balloons()
         except storage.AlreadyCheckedIn:
             st.info("You're already checked in ✓")
         except Exception:

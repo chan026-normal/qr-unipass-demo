@@ -8,34 +8,42 @@ import streamlit as st
 from streamlit_autorefresh import st_autorefresh
 
 import storage
+import ui
 
 st.set_page_config(page_title="QR UniPass — Dashboard", page_icon="📊", layout="wide")
 
-# Access logic: the dashboard (counts/list/chart) is ALWAYS visible so it can be
+# Access logic: the dashboard (count/list/chart) is ALWAYS visible so it can be
 # shown on the projector to anyone. Only the "Reset" control is presenter-only —
 # the presenter proves it by passing ?key=YOUR_KEY in the URL (matching ADMIN_KEY).
-# If no ADMIN_KEY is set, Reset stays open (handy for local development).
 admin_key = storage.get_setting("ADMIN_KEY", "")
 is_admin = (not admin_key) or (st.query_params.get("key", "") == admin_key)
 
 # Real-time feel.
 st_autorefresh(interval=3000, key="dashboard_refresh")
 
-st.title("QR UniPass — Live Attendance Dashboard")
+ui.render_header(active="attendance")
+st.markdown("##### Live Attendance Dashboard")
 
 data = storage.get_checkins()
 df = pd.DataFrame(data, columns=storage.FIELDS)
 roster = storage.load_roster()
 count = len(df)
 
-# --- KPI cards ---
-c1, c2, c3 = st.columns(3)
-c1.metric("Checked-in", count)
-c2.metric("Last check-in", df["timestamp"].iloc[-1].split("T")[-1] if count else "—")
+# Big live count — the showstopper. No cap/denominator (that would imply a limit).
+st.markdown(
+    f'<div style="text-align:center;margin:4px 0 2px;">'
+    f'<div style="font-size:88px;font-weight:700;line-height:1;color:#0F6E56;">{count}</div>'
+    f'<div style="font-size:15px;color:#5F5E5A;letter-spacing:2px;">CHECKED IN · LIVE</div>'
+    f'</div>',
+    unsafe_allow_html=True,
+)
+
+c1, c2 = st.columns(2)
+c1.metric("Last check-in", df["timestamp"].iloc[-1].split("T")[-1][:5] if count else "—")
 if roster:
-    c3.metric("Check-in rate", f"{round(100 * count / len(roster))}%")
+    c2.metric("Check-in rate", f"{round(100 * count / len(roster))}%")
 else:
-    c3.metric("Check-in rate", "—")
+    c2.metric("Latest", df["name"].iloc[-1] if count else "—")
 
 st.divider()
 
@@ -58,8 +66,6 @@ else:
 st.caption(f"Source: {storage.source_label()} · auto-refresh every 3s")
 
 # --- Reset (presenter only; with confirmation) ---
-# The whole control is hidden unless ?key=YOUR_KEY matches ADMIN_KEY, so other
-# people viewing the dashboard cannot wipe the data — they don't even see the button.
 if is_admin:
     with st.expander("⚙️ Admin controls"):
         if st.button("Reset all check-ins"):

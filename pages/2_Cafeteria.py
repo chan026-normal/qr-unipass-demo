@@ -10,6 +10,7 @@ Great for Q&A: "you mentioned cafeteria payment — can you show it?" → here i
 import streamlit as st
 
 import storage
+import ui
 
 st.set_page_config(page_title="QR UniPass — Cafeteria", page_icon="🍱", layout="centered")
 
@@ -18,14 +19,16 @@ st.markdown(
     <style>
       .stButton > button { font-size: 1.2rem; padding: 0.8rem 1rem; border-radius: 12px; }
       .block-container { padding-top: 2.5rem; max-width: 32rem; }
-      h1 { margin-bottom: 0; }
     </style>
     """,
     unsafe_allow_html=True,
 )
 
-st.title("QR UniPass")
+ui.render_header(active="cafeteria")
 st.caption("Cafeteria Payment")
+
+admin_key = storage.get_setting("ADMIN_KEY", "")
+is_admin = (not admin_key) or (st.query_params.get("key", "") == admin_key)
 
 # Vietnamese campus menu; prices in VND. (UI labels stay English.)
 MENU = [
@@ -68,8 +71,7 @@ if name:
     pick = st.selectbox("Choose your meal", labels)
     item, price = MENU[labels.index(pick)]
 
-    c1, c2 = st.columns(2)
-    if c1.button(f"Pay {storage.fmt_vnd(price)}", type="primary", width="stretch"):
+    if st.button(f"Pay {storage.fmt_vnd(price)}", type="primary", width="stretch"):
         try:
             new_bal = storage.cafe_pay(name, item, price)
             st.session_state["cafe_flash"] = (
@@ -81,7 +83,9 @@ if name:
         except Exception:
             st.session_state["cafe_flash"] = ("error", "Something went wrong. Please try again.")
         st.rerun()
-    if c2.button(f"Top up {storage.fmt_vnd(TOPUP)}", width="stretch"):
+
+    # Top-up is presenter-only (admin), so the student screen stays clean.
+    if is_admin and st.button(f"Top up {storage.fmt_vnd(TOPUP)} (admin)", width="stretch"):
         new_bal = storage.cafe_topup(name, TOPUP)
         st.session_state["cafe_flash"] = ("info", f"Topped up. New balance: {storage.fmt_vnd(new_bal)}")
         st.rerun()
@@ -95,8 +99,6 @@ revenue = sum(int(t.get("amount") or 0) for t in pays)
 st.caption(f"Today: {len(pays)} meals · {storage.fmt_vnd(revenue)} revenue · {storage.source_label()}")
 
 # Admin-only reset (same key as the dashboard; others never see this).
-admin_key = storage.get_setting("ADMIN_KEY", "")
-is_admin = (not admin_key) or (st.query_params.get("key", "") == admin_key)
 if is_admin:
     with st.expander("⚙️ Admin controls"):
         if st.button("Reset cafeteria data"):

@@ -8,3 +8,8 @@ font = "sans serif"
 
 [server]
 headless = true
+
+[client]
+# Hide the developer toolbar/menu so the audience sees a clean product.
+# You still manage the app from share.streamlit.io (Reboot / Settings / Logs).
+toolbarMode = "minimal"
