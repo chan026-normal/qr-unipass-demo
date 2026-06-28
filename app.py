@@ -9,7 +9,7 @@ import streamlit as st
 import storage
 import ui
 
-st.set_page_config(page_title="QR UniPass — Check-in", page_icon="✅", layout="centered")
+st.set_page_config(page_title="QR UniPass — Check-in", layout="centered")
 
 # Bigger touch targets for phones; keep it minimal.
 st.markdown(
@@ -57,7 +57,7 @@ if st.button("Check in", type="primary", width="stretch"):
             st.markdown(
                 f'<div style="background:#E1F5EE;border:1px solid #9FE1CB;border-radius:12px;'
                 f'padding:22px;text-align:center;margin-top:10px;">'
-                f'<div style="font-size:46px;line-height:1;">✅</div>'
+                f'{ui.icon_svg("check", size=46, color="#0F6E56", stroke=2)}'
                 f'<div style="font-size:18px;font-weight:600;color:#04342C;margin-top:6px;">'
                 f'You\'re checked in!</div>'
                 f'<div style="font-size:24px;font-weight:700;color:#04342C;margin-top:4px;">'
@@ -68,6 +68,6 @@ if st.button("Check in", type="primary", width="stretch"):
             )
             st.balloons()
         except storage.AlreadyCheckedIn:
-            st.info("You're already checked in ✓")
+            st.info("You're already checked in")
         except Exception:
             st.error("Something went wrong. Please try again.")

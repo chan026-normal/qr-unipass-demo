@@ -12,7 +12,7 @@ import streamlit as st
 import storage
 import ui
 
-st.set_page_config(page_title="QR UniPass — Cafeteria", page_icon="🍱", layout="centered")
+st.set_page_config(page_title="QR UniPass — Cafeteria", layout="centered")
 
 st.markdown(
     """
@@ -76,7 +76,7 @@ if name:
             new_bal = storage.cafe_pay(name, item, price)
             st.session_state["cafe_flash"] = (
                 "success",
-                f"✅ Paid {storage.fmt_vnd(price)} for {item}. New balance: {storage.fmt_vnd(new_bal)}",
+                f"Paid {storage.fmt_vnd(price)} for {item}. New balance: {storage.fmt_vnd(new_bal)}",
             )
         except storage.InsufficientBalance:
             st.session_state["cafe_flash"] = ("warning", "Not enough balance. Please top up.")
@@ -100,7 +100,7 @@ st.caption(f"Today: {len(pays)} meals · {storage.fmt_vnd(revenue)} revenue · {
 
 # Admin-only reset (same key as the dashboard; others never see this).
 if is_admin:
-    with st.expander("⚙️ Admin controls"):
+    with st.expander("Admin controls"):
         if st.button("Reset cafeteria data"):
             st.session_state["confirm_cafe_reset"] = True
         if st.session_state.get("confirm_cafe_reset"):

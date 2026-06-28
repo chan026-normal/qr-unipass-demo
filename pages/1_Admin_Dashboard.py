@@ -10,7 +10,7 @@ from streamlit_autorefresh import st_autorefresh
 import storage
 import ui
 
-st.set_page_config(page_title="QR UniPass — Dashboard", page_icon="📊", layout="wide")
+st.set_page_config(page_title="QR UniPass — Dashboard", layout="wide")
 
 # Access logic: the dashboard (count/list/chart) is ALWAYS visible so it can be
 # shown on the projector to anyone. Only the "Reset" control is presenter-only —
@@ -67,7 +67,7 @@ st.caption(f"Source: {storage.source_label()} · auto-refresh every 3s")
 
 # --- Reset (presenter only; with confirmation) ---
 if is_admin:
-    with st.expander("⚙️ Admin controls"):
+    with st.expander("Admin controls"):
         if st.button("Reset all check-ins"):
             st.session_state["confirm_reset"] = True
         if st.session_state.get("confirm_reset"):
