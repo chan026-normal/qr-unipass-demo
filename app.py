@@ -25,6 +25,31 @@ st.markdown(
 ui.render_header(active="attendance")
 st.caption("Xin chào — check in below")
 
+# Show the check-in result at the TOP, so it's visible without scrolling.
+result = st.session_state.pop("checkin_result", None)
+if result:
+    kind = result[0]
+    if kind == "ok":
+        _, who, when = result
+        st.markdown(
+            f'<div style="background:#E1F5EE;border:1px solid #9FE1CB;border-radius:12px;'
+            f'padding:22px;text-align:center;margin-bottom:14px;">'
+            f'{ui.icon_svg("check", size=46, color="#0F6E56", stroke=2)}'
+            f'<div style="font-size:18px;font-weight:600;color:#04342C;margin-top:6px;">'
+            f'You\'re checked in!</div>'
+            f'<div style="font-size:24px;font-weight:700;color:#04342C;margin-top:4px;">{who}</div>'
+            f'<div style="font-size:13px;color:#0F6E56;margin-top:4px;">{when} · welcome aboard</div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+        st.balloons()
+    elif kind == "dup":
+        st.info("You're already checked in")
+    elif kind == "warn":
+        st.warning("Please enter your name.")
+    else:
+        st.error("Something went wrong. Please try again.")
+
 roster = storage.load_roster()
 PLACEHOLDER = "— Select your name —"
 NOT_LISTED = "My name is not listed"
@@ -49,25 +74,14 @@ if st.button("Check in", type="primary", width="stretch"):
     name = (name or "").strip()
 
     if not name:
-        st.warning("Please enter your name.")
+        st.session_state["checkin_result"] = ("warn",)
     else:
         try:
             rec = storage.add_checkin(name, student_id)
             when = rec["timestamp"].split("T")[-1][:5]
-            st.markdown(
-                f'<div style="background:#E1F5EE;border:1px solid #9FE1CB;border-radius:12px;'
-                f'padding:22px;text-align:center;margin-top:10px;">'
-                f'{ui.icon_svg("check", size=46, color="#0F6E56", stroke=2)}'
-                f'<div style="font-size:18px;font-weight:600;color:#04342C;margin-top:6px;">'
-                f'You\'re checked in!</div>'
-                f'<div style="font-size:24px;font-weight:700;color:#04342C;margin-top:4px;">'
-                f'{rec["name"]}</div>'
-                f'<div style="font-size:13px;color:#0F6E56;margin-top:4px;">{when} · welcome aboard</div>'
-                f'</div>',
-                unsafe_allow_html=True,
-            )
-            st.balloons()
+            st.session_state["checkin_result"] = ("ok", rec["name"], when)
         except storage.AlreadyCheckedIn:
-            st.info("You're already checked in")
+            st.session_state["checkin_result"] = ("dup",)
         except Exception:
-            st.error("Something went wrong. Please try again.")
+            st.session_state["checkin_result"] = ("err",)
+    st.rerun()

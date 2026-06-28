@@ -74,5 +74,8 @@ def render_header(active: str = "") -> None:
             if soon:
                 st.button(f"{label} · Soon", icon=icon, disabled=True, help="Coming soon",
                           width="stretch", key=f"nav_{key}")
+            elif key == active:
+                # Current page — filled (teal) so you can tell where you are.
+                st.button(label, icon=icon, type="primary", width="stretch", key=f"nav_{key}")
             else:
                 st.page_link(page, label=label, icon=icon, width="stretch")

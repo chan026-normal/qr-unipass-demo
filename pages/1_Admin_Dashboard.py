@@ -18,7 +18,7 @@ st.set_page_config(page_title="QR UniPass — Dashboard", layout="wide")
 admin_key = storage.get_setting("ADMIN_KEY", "")
 is_admin = (not admin_key) or (st.query_params.get("key", "") == admin_key)
 
-ui.render_header(active="attendance")
+ui.render_header()
 
 # Presenter-only: the whole dashboard is locked behind ?key=YOUR_KEY.
 if not is_admin:
