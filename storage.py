@@ -267,3 +267,212 @@ def load_roster() -> list[str]:
     except Exception:
         return []
     return names
+
+
+# ====================== Cafeteria module (stretch goal) =================== #
+# Virtual balance ONLY — this is a simulation, never a real payment.
+# Kept fully separate from attendance so it can never affect that demo.
+# Balance is DERIVED from a transaction log, so both backends stay simple
+# and there is no mutable balance state to corrupt.
+CAFE_FIELDS = ["name", "student_id", "kind", "item", "amount", "timestamp"]
+
+
+class InsufficientBalance(Exception):
+    """Raised when a student tries to pay more than their virtual balance."""
+
+
+def cafe_start_balance() -> int:
+    try:
+        return int(get_setting("CAFE_START_BALANCE", "200000"))
+    except (TypeError, ValueError):
+        return 200000
+
+
+def fmt_vnd(amount) -> str:
+    return f"{int(amount):,} ₫"  # e.g. "35,000 ₫"
+
+
+# --- local SQLite ---
+def _cafe_sqlite_init():
+    conn = _connect()
+    try:
+        conn.execute(
+            """CREATE TABLE IF NOT EXISTS cafeteria (
+                   name       TEXT NOT NULL,
+                   student_id TEXT,
+                   kind       TEXT NOT NULL,
+                   item       TEXT,
+                   amount     INTEGER NOT NULL,
+                   timestamp  TEXT NOT NULL
+               )"""
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def _cafe_sqlite_add(rec: dict):
+    with _LOCK:
+        conn = _connect()
+        try:
+            conn.execute(
+                "INSERT INTO cafeteria (name, student_id, kind, item, amount, timestamp) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                (rec["name"], rec["student_id"], rec["kind"], rec["item"],
+                 rec["amount"], rec["timestamp"]),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+
+def _cafe_sqlite_get() -> list[dict]:
+    conn = _connect()
+    try:
+        rows = conn.execute(
+            "SELECT name, student_id, kind, item, amount, timestamp "
+            "FROM cafeteria ORDER BY timestamp ASC"
+        ).fetchall()
+    finally:
+        conn.close()
+    return [dict(zip(CAFE_FIELDS, row)) for row in rows]
+
+
+def _cafe_sqlite_reset():
+    with _LOCK:
+        conn = _connect()
+        try:
+            conn.execute("DELETE FROM cafeteria")
+            conn.commit()
+        finally:
+            conn.close()
+
+
+# --- Google Sheets ---
+def _cafe_ws():
+    import streamlit as st
+
+    @st.cache_resource(show_spinner=False)
+    def _open():
+        import gspread
+        from google.oauth2.service_account import Credentials
+
+        scopes = [
+            "https://www.googleapis.com/auth/spreadsheets",
+            "https://www.googleapis.com/auth/drive",
+        ]
+        info = dict(st.secrets["gcp_service_account"])
+        creds = Credentials.from_service_account_info(info, scopes=scopes)
+        client = gspread.authorize(creds)
+        sh = client.open(get_setting("SHEET_NAME", "qr-unipass-attendance"))
+        try:
+            ws = sh.worksheet("cafeteria")
+        except Exception:
+            ws = sh.add_worksheet("cafeteria", rows=2000, cols=10)
+        if ws.row_values(1)[:6] != CAFE_FIELDS:
+            ws.update("A1:F1", [CAFE_FIELDS])
+        return ws
+
+    return _open()
+
+
+def _cafe_sheets_add(rec: dict):
+    import gspread
+
+    ws = _cafe_ws()
+    for attempt in range(2):
+        try:
+            ws.append_row(
+                [rec["name"], rec["student_id"], rec["kind"], rec["item"],
+                 rec["amount"], rec["timestamp"]],
+                value_input_option="USER_ENTERED",
+            )
+            return
+        except gspread.exceptions.APIError:
+            if attempt == 1:
+                raise
+
+
+def _cafe_sheets_get() -> list[dict]:
+    ws = _cafe_ws()
+    out = []
+    for r in ws.get_all_records(expected_headers=CAFE_FIELDS):
+        d = {k: r.get(k, "") for k in CAFE_FIELDS}
+        try:
+            d["amount"] = int(d["amount"] or 0)
+        except (TypeError, ValueError):
+            d["amount"] = 0
+        out.append(d)
+    return out
+
+
+def _cafe_sheets_reset():
+    ws = _cafe_ws()
+    ws.clear()
+    ws.update("A1:F1", [CAFE_FIELDS])
+
+
+# --- public cafeteria API ---
+def _cafe_add(rec: dict):
+    if use_sheets():
+        _cafe_sheets_add(rec)
+    else:
+        _cafe_sqlite_init()
+        _cafe_sqlite_add(rec)
+
+
+def get_cafeteria() -> list[dict]:
+    if use_sheets():
+        try:
+            return _cafe_sheets_get()
+        except Exception:
+            return []
+    _cafe_sqlite_init()
+    return _cafe_sqlite_get()
+
+
+def cafe_balance(name: str, student_id: str = "") -> int:
+    key = _key({"name": name, "student_id": student_id})
+    bal = cafe_start_balance()
+    for r in get_cafeteria():
+        if _key(r) != key:
+            continue
+        amt = int(r.get("amount") or 0)
+        if r.get("kind") == "pay":
+            bal -= amt
+        elif r.get("kind") == "topup":
+            bal += amt
+    return bal
+
+
+def cafe_pay(name: str, item: str, amount: int, student_id: str = "") -> int:
+    name = (name or "").strip()
+    if not name:
+        raise ValueError("Name is required.")
+    amount = int(amount)
+    if cafe_balance(name, student_id) < amount:
+        raise InsufficientBalance(name)
+    _cafe_add({
+        "name": name, "student_id": (student_id or "").strip(), "kind": "pay",
+        "item": item, "amount": amount, "timestamp": now_iso(),
+    })
+    return cafe_balance(name, student_id)
+
+
+def cafe_topup(name: str, amount: int, student_id: str = "") -> int:
+    name = (name or "").strip()
+    if not name:
+        raise ValueError("Name is required.")
+    _cafe_add({
+        "name": name, "student_id": (student_id or "").strip(), "kind": "topup",
+        "item": "", "amount": int(amount), "timestamp": now_iso(),
+    })
+    return cafe_balance(name, student_id)
+
+
+def cafe_reset() -> None:
+    if use_sheets():
+        _cafe_sheets_reset()
+    else:
+        _cafe_sqlite_init()
+        _cafe_sqlite_reset()
