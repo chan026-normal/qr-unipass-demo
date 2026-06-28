@@ -4,9 +4,25 @@ The module nav uses Streamlit's native st.page_link / st.button so navigation
 is instant (no full page reload, no badge flicker). Built modules link to their
 page; unbuilt ones are disabled with a "Coming soon" tooltip.
 """
+import json
+
 import streamlit as st
+import streamlit.components.v1 as components
 
 NAVY = "#14294C"
+
+# Chrome we hide so the audience sees a clean product (Fork/GitHub badge, etc.).
+_PERSIST_CSS = (
+    "header[data-testid='stHeader']{display:none!important;}"
+    "[data-testid='stToolbar']{display:none!important;}"
+    "[data-testid='stToolbarActions']{display:none!important;}"
+    "[data-testid='manage-app-button']{display:none!important;}"
+    "[data-testid='stStatusWidget']{display:none!important;}"
+    "a[href*='github.com']{display:none!important;}"
+    "a[href*='streamlit.io']{display:none!important;}"
+    "[class*='viewerBadge']{display:none!important;}"
+    "#MainMenu{display:none!important;}footer{display:none!important;}"
+)
 
 # Inline SVG icon used by the check-in success card (no font, no emoji).
 _ICON_PATHS = {
@@ -55,8 +71,23 @@ def _hide_chrome() -> None:
         '[data-testid="stPageLink"] a:hover{background:rgba(29,158,117,.10);border-color:#1D9E75;}'
         '[class*="st-key-nav_"] button p{white-space:nowrap;font-size:12px;}'
         '[class*="st-key-nav_"] button{padding-left:2px;padding-right:2px;}'
+        # Pull the 0-height helper component out of flow so it adds no gap
+        '[data-testid="stElementContainer"]:has(> iframe[data-testid="stIFrame"])'
+        '{position:absolute!important;height:0!important;width:0!important;overflow:hidden!important;}'
         '</style>',
         unsafe_allow_html=True,
+    )
+
+
+def _persist_chrome_hide() -> None:
+    """Inject the chrome-hiding CSS into the PARENT document <head> so it stays
+    applied across page navigations — prevents the brief Fork-badge flash."""
+    components.html(
+        "<script>(function(){try{var d=window.parent.document;"
+        "var s=d.getElementById('qrunipass-hide');"
+        "if(!s){s=d.createElement('style');s.id='qrunipass-hide';d.head.appendChild(s);}"
+        "s.textContent=" + json.dumps(_PERSIST_CSS) + ";}catch(e){}})();</script>",
+        height=0,
     )
 
 
@@ -66,6 +97,7 @@ def render_header(active: str = "") -> None:
     Built modules (Attendance, Cafeteria) navigate instantly; Library and
     Dormitory are disabled with a "Coming soon" tooltip.
     """
+    _persist_chrome_hide()
     _hide_chrome()
     st.markdown(
         f'<div style="background:{NAVY};border-radius:12px;padding:14px 16px;margin-bottom:10px;">'
