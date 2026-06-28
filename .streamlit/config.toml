@@ -13,3 +13,6 @@ headless = true
 # Hide the developer toolbar/menu so the audience sees a clean product.
 # You still manage the app from share.streamlit.io (Reboot / Settings / Logs).
 toolbarMode = "minimal"
+# Hide the multipage navigation so the audience stays on the check-in screen
+# (the presenter opens the dashboard / cafeteria via direct URLs).
+showSidebarNavigation = false
