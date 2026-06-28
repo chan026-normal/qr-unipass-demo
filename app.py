@@ -46,7 +46,7 @@ if result:
     elif kind == "dup":
         st.info("You're already checked in")
     elif kind == "warn":
-        st.warning("Please enter your name.")
+        st.warning("Please enter your name or Student ID.")
     else:
         st.error("Something went wrong. Please try again.")
 
@@ -54,17 +54,18 @@ roster = storage.load_roster()
 PLACEHOLDER = "— Select your name —"
 NOT_LISTED = "My name is not listed"
 
+st.caption("Enter your Student ID, or your name if you don't have one.")
+student_id = st.text_input("Student ID")
+
 # Name input (reactive, no form, so the "not listed" field appears instantly).
 manual_name = ""
 choice = None
 if roster:
-    choice = st.selectbox("Your name", [PLACEHOLDER] + roster + [NOT_LISTED])
+    choice = st.selectbox("Name", [PLACEHOLDER] + roster + [NOT_LISTED])
     if choice == NOT_LISTED:
         manual_name = st.text_input("Type your name")
 else:
-    manual_name = st.text_input("Your name", placeholder="e.g. Nguyen Van A")
-
-student_id = st.text_input("Student ID (optional)")
+    manual_name = st.text_input("Name", placeholder="e.g. Nguyen Van A")
 
 if st.button("Check in", type="primary", width="stretch"):
     if roster and choice and choice not in (PLACEHOLDER, NOT_LISTED):
@@ -72,14 +73,16 @@ if st.button("Check in", type="primary", width="stretch"):
     else:
         name = manual_name
     name = (name or "").strip()
+    sid = (student_id or "").strip()
 
-    if not name:
+    if not name and not sid:
         st.session_state["checkin_result"] = ("warn",)
     else:
         try:
-            rec = storage.add_checkin(name, student_id)
+            rec = storage.add_checkin(name, sid)
             when = rec["timestamp"].split("T")[-1][:5]
-            st.session_state["checkin_result"] = ("ok", rec["name"], when)
+            who = rec["name"] or f"ID {rec['student_id']}"
+            st.session_state["checkin_result"] = ("ok", who, when)
         except storage.AlreadyCheckedIn:
             st.session_state["checkin_result"] = ("dup",)
         except Exception:

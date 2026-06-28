@@ -209,11 +209,11 @@ def _sheets_reset():
 
 
 # ============================== Public API ================================ #
-def add_checkin(name: str, student_id: str = "", source: str = "classroom") -> dict:
+def add_checkin(name: str = "", student_id: str = "", source: str = "classroom") -> dict:
     name = (name or "").strip()
     student_id = (student_id or "").strip()
-    if not name:
-        raise ValueError("Name is required.")
+    if not name and not student_id:
+        raise ValueError("Name or Student ID is required.")
 
     rec = {
         "name": name,
@@ -431,7 +431,7 @@ def get_cafeteria() -> list[dict]:
     return _cafe_sqlite_get()
 
 
-def cafe_balance(name: str, student_id: str = "") -> int:
+def cafe_balance(name: str = "", student_id: str = "") -> int:
     key = _key({"name": name, "student_id": student_id})
     bal = cafe_start_balance()
     for r in get_cafeteria():
@@ -445,13 +445,14 @@ def cafe_balance(name: str, student_id: str = "") -> int:
     return bal
 
 
-def cafe_pay(name: str, item: str, amount: int, student_id: str = "") -> int:
+def cafe_pay(name: str = "", item: str = "", amount: int = 0, student_id: str = "") -> int:
     name = (name or "").strip()
-    if not name:
-        raise ValueError("Name is required.")
+    student_id = (student_id or "").strip()
+    if not name and not student_id:
+        raise ValueError("Name or Student ID is required.")
     amount = int(amount)
     if cafe_balance(name, student_id) < amount:
-        raise InsufficientBalance(name)
+        raise InsufficientBalance(name or student_id)
     _cafe_add({
         "name": name, "student_id": (student_id or "").strip(), "kind": "pay",
         "item": item, "amount": amount, "timestamp": now_iso(),
@@ -459,10 +460,11 @@ def cafe_pay(name: str, item: str, amount: int, student_id: str = "") -> int:
     return cafe_balance(name, student_id)
 
 
-def cafe_topup(name: str, amount: int, student_id: str = "") -> int:
+def cafe_topup(name: str = "", amount: int = 0, student_id: str = "") -> int:
     name = (name or "").strip()
-    if not name:
-        raise ValueError("Name is required.")
+    student_id = (student_id or "").strip()
+    if not name and not student_id:
+        raise ValueError("Name or Student ID is required.")
     _cafe_add({
         "name": name, "student_id": (student_id or "").strip(), "kind": "topup",
         "item": "", "amount": int(amount), "timestamp": now_iso(),

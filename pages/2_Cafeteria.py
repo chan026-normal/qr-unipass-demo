@@ -49,35 +49,41 @@ flash = st.session_state.pop("cafe_flash", None)
 if flash:
     getattr(st, flash[0])(flash[1])
 
-confirmed = st.session_state.get("cafe_user", "")
+confirmed = st.session_state.get("cafe_user") or None
 
 if not confirmed:
-    # Step 1 — identify yourself. The menu appears only after this.
+    # Step 1 — identify yourself (Student ID or name). The menu appears after this.
+    st.caption("Enter your Student ID, or your name if you don't have one.")
+    sid_in = st.text_input("Student ID")
+
     manual_name = ""
     choice = None
     if roster:
-        choice = st.selectbox("Your name", [PLACEHOLDER] + roster + [NOT_LISTED])
+        choice = st.selectbox("Name", [PLACEHOLDER] + roster + [NOT_LISTED])
         if choice == NOT_LISTED:
             manual_name = st.text_input("Type your name")
     else:
-        manual_name = st.text_input("Your name", placeholder="e.g. Nguyen Van A")
+        manual_name = st.text_input("Name", placeholder="e.g. Nguyen Van A")
 
     if roster and choice and choice not in (PLACEHOLDER, NOT_LISTED):
         name = choice
     else:
         name = manual_name
     name = (name or "").strip()
+    sid = (sid_in or "").strip()
 
     if st.button("Continue", type="primary", width="stretch"):
-        if not name:
-            st.session_state["cafe_flash"] = ("warning", "Please enter your name first.")
+        if not name and not sid:
+            st.session_state["cafe_flash"] = ("warning", "Please enter your name or Student ID.")
         else:
-            st.session_state["cafe_user"] = name
+            st.session_state["cafe_user"] = {"name": name, "student_id": sid}
         st.rerun()
 else:
-    # Step 2 — balance, menu, pay.
-    st.caption(f"Paying as {confirmed}")
-    st.metric("Balance", storage.fmt_vnd(storage.cafe_balance(confirmed)))
+    # Step 2 — balance, menu, pay (keyed by Student ID if given, else name).
+    cname = confirmed.get("name", "")
+    csid = confirmed.get("student_id", "")
+    st.caption(f"Paying as {cname or ('ID ' + csid)}")
+    st.metric("Balance", storage.fmt_vnd(storage.cafe_balance(cname, csid)))
 
     labels = [f"{item} — {storage.fmt_vnd(price)}" for item, price in MENU]
     pick = st.selectbox("Choose your meal", labels)
@@ -85,7 +91,7 @@ else:
 
     if st.button(f"Pay {storage.fmt_vnd(price)}", type="primary", width="stretch"):
         try:
-            new_bal = storage.cafe_pay(confirmed, item, price)
+            new_bal = storage.cafe_pay(cname, item, price, csid)
             st.session_state["cafe_flash"] = (
                 "success",
                 f"Paid {storage.fmt_vnd(price)} for {item}. New balance: {storage.fmt_vnd(new_bal)}",
@@ -98,12 +104,12 @@ else:
 
     # Top-up is presenter-only (admin), so the student screen stays clean.
     if is_admin and st.button(f"Top up {storage.fmt_vnd(TOPUP)} (admin)", width="stretch"):
-        new_bal = storage.cafe_topup(confirmed, TOPUP)
+        new_bal = storage.cafe_topup(cname, TOPUP, csid)
         st.session_state["cafe_flash"] = ("info", f"Topped up. New balance: {storage.fmt_vnd(new_bal)}")
         st.rerun()
 
-    if st.button("Change name"):
-        st.session_state["cafe_user"] = ""
+    if st.button("Start over"):
+        st.session_state["cafe_user"] = None
         st.rerun()
 
 # Admin-only reset (same key as the dashboard; others never see this).
